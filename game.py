@@ -2,13 +2,6 @@ import random
 from typing import List, Tuple, Optional
 
 ANIMALS = ["Lion", "Monkey", "Elephant", "Giraffe", "Tiger"]
-ANIMAL_ICONS = {
-    "Lion": "\U0001F981",       # 🦁
-    "Monkey": "\U0001F435",     # 🐵
-    "Elephant": "\U0001F418",   # 🐘
-    "Giraffe": "\U0001F992",    # 🦒
-    "Tiger": "\U0001F42F"       # 🐯
-}
 GRID_SIZE = 5
 
 Board = List[List[Optional[str]]]
@@ -17,7 +10,7 @@ Board = List[List[Optional[str]]]
 def display_board(board: Board) -> None:
     print("  " + " ".join(str(i) for i in range(GRID_SIZE)))
     for idx, row in enumerate(board):
-        row_display = [ANIMAL_ICONS[tile] if tile else '.' for tile in row]
+        row_display = [tile[0] if tile else '.' for tile in row]
         print(f"{idx} " + " ".join(row_display))
     print()
 
@@ -92,18 +85,15 @@ def run_game(ai: bool = False) -> None:
     for player in (1, 2):
         more, less = random.sample(ANIMALS, 2)
         cond[player] = (more, less)
-        seq_icons = ' '.join(ANIMAL_ICONS[a] for a in seq[player])
-        print(f"\nPlayer {player} secret sequence: {seq_icons}")
-        print(
-            f"Player {player} condition: more {ANIMAL_ICONS[more]} than {ANIMAL_ICONS[less]}\n"
-        )
+        print(f"\nPlayer {player} secret sequence: {seq[player]}")
+        print(f"Player {player} condition: more {more} than {less}\n")
 
     current_round = 1
     while any(None in row for row in board):
         print(f"--- Round {current_round} ---")
         display_board(board)
         tile = random.choice(ANIMALS)
-        print(f"Tile up for auction: {ANIMAL_ICONS[tile]}")
+        print(f"Tile up for auction: {tile}")
         bids = {}
         for player in (1, 2):
             if ai and player == 2:
