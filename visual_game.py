@@ -1,6 +1,7 @@
+import os
 import pygame
 import random
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Dict
 from game import ANIMALS, GRID_SIZE, check_sequence, check_condition, choose_spot_ai, ai_bid
 
 Board = List[List[Optional[str]]]
@@ -8,6 +9,9 @@ Board = List[List[Optional[str]]]
 TILE_SIZE = 80
 MARGIN = 10
 AUCTION_HEIGHT = TILE_SIZE + MARGIN  # space above board to show next tile
+
+# Will be populated after pygame is initialized
+ANIMAL_IMAGES: Dict[str, pygame.Surface] = {}
 
 
 def draw_board(screen: pygame.Surface, board: Board, font: pygame.font.Font) -> None:
@@ -20,9 +24,14 @@ def draw_board(screen: pygame.Surface, board: Board, font: pygame.font.Font) -> 
             pygame.draw.rect(screen, (245, 245, 220), rect)  # light tile
             pygame.draw.rect(screen, (0, 0, 0), rect, 2)
             if tile:
-                text = font.render(tile[0], True, (0, 0, 0))
-                text_rect = text.get_rect(center=rect.center)
-                screen.blit(text, text_rect)
+                img = ANIMAL_IMAGES.get(tile)
+                if img:
+                    img_rect = img.get_rect(center=rect.center)
+                    screen.blit(img, img_rect)
+                else:
+                    text = font.render(tile[0], True, (0, 0, 0))
+                    text_rect = text.get_rect(center=rect.center)
+                    screen.blit(text, text_rect)
 
 
 def draw_next_tile(screen: pygame.Surface, tile: str, font: pygame.font.Font,
@@ -32,9 +41,14 @@ def draw_next_tile(screen: pygame.Surface, tile: str, font: pygame.font.Font,
     pygame.draw.rect(screen, (220, 220, 220), area)
     pygame.draw.rect(screen, (0, 0, 0), area, 2)
     if tile:
-        text = font.render(tile, True, (0, 0, 0))
-        text_rect = text.get_rect(center=area.center)
-        screen.blit(text, text_rect)
+        img = ANIMAL_IMAGES.get(tile)
+        if img:
+            img_rect = img.get_rect(center=area.center)
+            screen.blit(img, img_rect)
+        else:
+            text = font.render(tile, True, (0, 0, 0))
+            text_rect = text.get_rect(center=area.center)
+            screen.blit(text, text_rect)
 
 
 def choose_spot_visual(board: Board, board_width: int) -> Tuple[int, int]:
@@ -186,6 +200,17 @@ def run_game_visual(ai: Optional[bool] = None) -> None:
     pygame.display.set_caption("Zoo Mahjong")
     font_large = pygame.font.SysFont(None, 48)
     font_small = pygame.font.SysFont(None, 24)
+
+    global ANIMAL_IMAGES
+    ANIMAL_IMAGES = {}
+    for animal in ANIMALS:
+        path = os.path.join("images", f"{animal.lower()}.png")
+        try:
+            img = pygame.image.load(path).convert_alpha()
+            img = pygame.transform.smoothscale(img, (TILE_SIZE - 10, TILE_SIZE - 10))
+            ANIMAL_IMAGES[animal] = img
+        except pygame.error:
+            print(f"Could not load image for {animal} from {path}")
 
     top_rect = pygame.Rect(board_width + 2 * MARGIN, MARGIN, info_width, 150)
     bottom_rect = pygame.Rect(board_width + 2 * MARGIN,
