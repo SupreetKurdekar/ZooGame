@@ -99,7 +99,7 @@ def get_bid_input(screen: pygame.Surface, board: Board, tile: str, player: int,
                 pygame.quit()
                 raise SystemExit
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RETURN:
+                if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
                     if text == "":
                         print("Enter a number.")
                         continue
