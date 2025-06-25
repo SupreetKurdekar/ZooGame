@@ -55,22 +55,93 @@ def choose_spot_visual(board: Board, board_width: int) -> Tuple[int, int]:
         pygame.time.wait(10)
 
 
-def draw_info(screen: pygame.Surface, chips, seq, cond, font: pygame.font.Font, x: int) -> None:
-    """Draw player information on the right side."""
-    y = MARGIN
-    for player in (1, 2):
-        lines = [
-            f"Player {player}",
-            f"Chips: {chips[player]}",
-            f"Seq: {'-'.join(seq[player])}",
-            f"Cond: more {cond[player][0]} than {cond[player][1]}",
-            ""
-        ]
-        for line in lines:
-            text = font.render(line, True, (0, 0, 0))
-            screen.blit(text, (x, y))
-            y += font.get_height() + 5
-        y += font.get_height()
+def draw_player_panel(screen: pygame.Surface, player: int, chips, seq, cond,
+                      font: pygame.font.Font, rect: pygame.Rect,
+                      text: str = "") -> None:
+    """Draw a single player's info and a bid box."""
+    pygame.draw.rect(screen, (220, 220, 220), rect)
+    pygame.draw.rect(screen, (0, 0, 0), rect, 2)
+    padding = 5
+    y = rect.y + padding
+
+    lines = [
+        f"Player {player}",
+        f"Chips: {chips[player]}",
+        f"Seq: {'-'.join(seq[player])}",
+        f"Cond: more {cond[player][0]} than {cond[player][1]}",
+        "",
+    ]
+    for line in lines:
+        text_surf = font.render(line, True, (0, 0, 0))
+        screen.blit(text_surf, (rect.x + padding, y))
+        y += font.get_height() + 5
+
+    box_h = font.get_height() + 10
+    box_rect = pygame.Rect(rect.x + padding,
+                           rect.bottom - box_h - padding,
+                           rect.width - 2 * padding, box_h)
+    pygame.draw.rect(screen, (255, 255, 255), box_rect)
+    pygame.draw.rect(screen, (0, 0, 0), box_rect, 2)
+    bid_surf = font.render(text, True, (0, 0, 0))
+    screen.blit(bid_surf, (box_rect.x + 5, box_rect.y + 5))
+
+
+def get_bid_input(screen: pygame.Surface, board: Board, tile: str, player: int,
+                   chips, seq, cond, font_large, font_small, board_width,
+                   rects, last_winner: str) -> int:
+    """Return a bid entered via on-screen text box."""
+    top_rect, middle_rect, bottom_rect = rects
+    text = ""
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                raise SystemExit
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN:
+                    if text == "":
+                        print("Enter a number.")
+                        continue
+                    try:
+                        bid_val = int(text)
+                    except ValueError:
+                        print("Enter a number.")
+                        text = ""
+                        continue
+                    if 0 <= bid_val <= chips[player]:
+                        return bid_val
+                    print("Invalid bid.")
+                    text = ""
+                elif event.key == pygame.K_BACKSPACE:
+                    text = text[:-1]
+                elif event.unicode.isdigit():
+                    text += event.unicode
+
+        screen.fill((200, 200, 200))
+        draw_next_tile(screen, tile, font_large, board_width)
+        draw_board(screen, board, font_large)
+        draw_middle_text(screen, last_winner, font_small, middle_rect)
+        if player == 1:
+            draw_player_panel(screen, 1, chips, seq, cond, font_small,
+                              top_rect, text)
+            pygame.draw.rect(screen, (200, 200, 200), bottom_rect)
+        else:
+            pygame.draw.rect(screen, (200, 200, 200), top_rect)
+            draw_player_panel(screen, 2, chips, seq, cond, font_small,
+                              bottom_rect, text)
+        pygame.display.flip()
+        pygame.time.wait(10)
+
+def draw_middle_text(screen: pygame.Surface, message: str,
+                     font: pygame.font.Font, rect: pygame.Rect) -> None:
+    """Draw the bidding result in the center info panel."""
+    pygame.draw.rect(screen, (220, 220, 220), rect)
+    pygame.draw.rect(screen, (0, 0, 0), rect, 2)
+    if message:
+        text_surf = font.render(message, True, (0, 0, 0))
+        text_rect = text_surf.get_rect(center=rect.center)
+        screen.blit(text_surf, text_rect)
 
 
 def select_ai_mode(screen: pygame.Surface,
@@ -109,11 +180,21 @@ def run_game_visual(ai: Optional[bool] = None) -> None:
     pygame.init()
     board_width = GRID_SIZE * TILE_SIZE
     info_width = 300
+    screen_height = AUCTION_HEIGHT + GRID_SIZE * TILE_SIZE + 2 * MARGIN
     screen = pygame.display.set_mode((board_width + info_width + 3 * MARGIN,
-                                      AUCTION_HEIGHT + GRID_SIZE * TILE_SIZE + 2 * MARGIN))
+                                      screen_height))
     pygame.display.set_caption("Zoo Mahjong")
     font_large = pygame.font.SysFont(None, 48)
     font_small = pygame.font.SysFont(None, 24)
+
+    top_rect = pygame.Rect(board_width + 2 * MARGIN, MARGIN, info_width, 150)
+    bottom_rect = pygame.Rect(board_width + 2 * MARGIN,
+                              screen_height - 150 - MARGIN,
+                              info_width, 150)
+    middle_height = bottom_rect.top - top_rect.bottom - MARGIN
+    middle_rect = pygame.Rect(board_width + 2 * MARGIN,
+                              top_rect.bottom + MARGIN,
+                              info_width, middle_height)
 
     if ai is None:
         ai = select_ai_mode(screen, font_large)
@@ -131,21 +212,12 @@ def run_game_visual(ai: Optional[bool] = None) -> None:
         print(f"Player {player} condition: more {more} than {less}\n")
 
     current_round = 1
+    last_winner = ""
     tile = None
     while any(None in row for row in board):
         tile = random.choice(ANIMALS)
         print(f"--- Round {current_round} ---")
         print(f"Tile up for auction: {tile}")
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                return
-        screen.fill((200, 200, 200))
-        draw_next_tile(screen, tile, font_large, board_width)
-        draw_board(screen, board, font_large)
-        draw_info(screen, chips, seq, cond, font_small,
-                  board_width + 2 * MARGIN)
-        pygame.display.flip()
 
         bids = {}
         for player in (1, 2):
@@ -153,15 +225,10 @@ def run_game_visual(ai: Optional[bool] = None) -> None:
                 bid = ai_bid(chips[player])
                 print(f"Computer bids {bid} (chips left {chips[player]})")
             else:
-                while True:
-                    try:
-                        bid = int(input(f"Player {player} bids (chips left {chips[player]}): "))
-                        if 0 <= bid <= chips[player]:
-                            break
-                        else:
-                            print("Invalid bid.")
-                    except ValueError:
-                        print("Enter a number.")
+                bid = get_bid_input(screen, board, tile, player, chips, seq, cond,
+                                    font_large, font_small, board_width,
+                                    (top_rect, middle_rect, bottom_rect),
+                                    last_winner)
             bids[player] = bid
 
         if bids[1] == bids[2]:
@@ -170,12 +237,16 @@ def run_game_visual(ai: Optional[bool] = None) -> None:
         else:
             winner = 1 if bids[1] > bids[2] else 2
         chips[winner] -= bids[winner]
+        last_winner = f"Player {winner} won the bid"
         print(f"Player {winner} wins and places the tile.")
         screen.fill((200, 200, 200))
         draw_next_tile(screen, tile, font_large, board_width)
         draw_board(screen, board, font_large)
-        draw_info(screen, chips, seq, cond, font_small,
-                  board_width + 2 * MARGIN)
+        draw_middle_text(screen, last_winner, font_small, middle_rect)
+        if not (ai and winner == 2):
+            panel_rect = top_rect if winner == 1 else bottom_rect
+            draw_player_panel(screen, winner, chips, seq, cond,
+                              font_small, panel_rect)
         pygame.display.flip()
         if ai and winner == 2:
             r, c = choose_spot_ai(board)
@@ -189,8 +260,8 @@ def run_game_visual(ai: Optional[bool] = None) -> None:
             screen.fill((200, 200, 200))
             draw_next_tile(screen, "", font_large, board_width)
             draw_board(screen, board, font_large)
-            draw_info(screen, chips, seq, cond, font_small,
-                      board_width + 2 * MARGIN)
+            draw_middle_text(screen, f"Player {winner} wins!", font_small,
+                             middle_rect)
             pygame.display.flip()
             print(f"Player {winner} wins!")
             pygame.time.wait(2000)
@@ -202,8 +273,7 @@ def run_game_visual(ai: Optional[bool] = None) -> None:
     screen.fill((200, 200, 200))
     draw_next_tile(screen, "", font_large, board_width)
     draw_board(screen, board, font_large)
-    draw_info(screen, chips, seq, cond, font_small,
-              board_width + 2 * MARGIN)
+    draw_middle_text(screen, "It's a draw!", font_small, middle_rect)
     pygame.display.flip()
     print("The board is full. It's a draw!")
     pygame.time.wait(2000)
