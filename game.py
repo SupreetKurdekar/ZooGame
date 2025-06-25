@@ -137,5 +137,16 @@ def run_game(ai: bool = False) -> None:
 
 if __name__ == "__main__":
     import sys
-    ai_mode = len(sys.argv) > 1 and sys.argv[1].lower() == "ai"
+    if len(sys.argv) > 1 and sys.argv[1].lower() == "ai":
+        ai_mode = True
+    else:
+        while True:
+            choice = input("Enter number of players (1 or 2): ")
+            if choice == "1":
+                ai_mode = True
+                break
+            if choice == "2":
+                ai_mode = False
+                break
+            print("Please enter 1 or 2.")
     run_game(ai=ai_mode)

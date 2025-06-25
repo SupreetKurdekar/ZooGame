@@ -23,7 +23,9 @@ Run the game with:
 python3 game.py
 ```
 
-You can also play against a simple computer opponent for debugging with:
+You'll be prompted to choose between a 1-player game (against the computer) or a
+2-player game. You can still provide the optional `ai` argument to skip the
+prompt and immediately start in single-player mode:
 
 ```bash
 python3 game.py ai
@@ -35,7 +37,9 @@ Alternatively you can launch a basic graphical version using pygame:
 python3 visual_game.py
 ```
 
-The visual mode also supports the `ai` argument to enable a computer opponent:
+When starting the graphical mode you'll first see a small menu where you can
+choose between a 1-player game or a 2-player game. The `ai` argument can still
+be used to bypass the menu and immediately start in single-player mode:
 
 ```bash
 python3 visual_game.py ai

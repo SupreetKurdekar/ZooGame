@@ -73,7 +73,39 @@ def draw_info(screen: pygame.Surface, chips, seq, cond, font: pygame.font.Font, 
         y += font.get_height()
 
 
-def run_game_visual(ai: bool = False) -> None:
+def select_ai_mode(screen: pygame.Surface,
+                   font: pygame.font.Font) -> bool:
+    """Return True for a 1-player game, False for 2 players."""
+    w, h = screen.get_size()
+    one_rect = pygame.Rect(w // 2 - 160, h // 2 - 40, 140, 60)
+    two_rect = pygame.Rect(w // 2 + 20, h // 2 - 40, 140, 60)
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                raise SystemExit
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if one_rect.collidepoint(event.pos):
+                    return True
+                if two_rect.collidepoint(event.pos):
+                    return False
+
+        screen.fill((220, 220, 220))
+        pygame.draw.rect(screen, (180, 180, 180), one_rect)
+        pygame.draw.rect(screen, (180, 180, 180), two_rect)
+        pygame.draw.rect(screen, (0, 0, 0), one_rect, 2)
+        pygame.draw.rect(screen, (0, 0, 0), two_rect, 2)
+
+        text1 = font.render("1 Player", True, (0, 0, 0))
+        text2 = font.render("2 Players", True, (0, 0, 0))
+        screen.blit(text1, text1.get_rect(center=one_rect.center))
+        screen.blit(text2, text2.get_rect(center=two_rect.center))
+        pygame.display.flip()
+        pygame.time.wait(10)
+
+
+def run_game_visual(ai: Optional[bool] = None) -> None:
     pygame.init()
     board_width = GRID_SIZE * TILE_SIZE
     info_width = 300
@@ -82,6 +114,11 @@ def run_game_visual(ai: bool = False) -> None:
     pygame.display.set_caption("Zoo Mahjong")
     font_large = pygame.font.SysFont(None, 48)
     font_small = pygame.font.SysFont(None, 24)
+
+    if ai is None:
+        ai = select_ai_mode(screen, font_large)
+        screen.fill((200, 200, 200))
+        pygame.display.flip()
 
     board: Board = [[None] * GRID_SIZE for _ in range(GRID_SIZE)]
     chips = {1: 10, 2: 10}
@@ -175,5 +212,7 @@ def run_game_visual(ai: bool = False) -> None:
 
 if __name__ == "__main__":
     import sys
-    ai_mode = len(sys.argv) > 1 and sys.argv[1].lower() == "ai"
-    run_game_visual(ai=ai_mode)
+    if len(sys.argv) > 1 and sys.argv[1].lower() == "ai":
+        run_game_visual(ai=True)
+    else:
+        run_game_visual(ai=None)
