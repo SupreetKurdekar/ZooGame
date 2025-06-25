@@ -2,7 +2,14 @@ import os
 import pygame
 import random
 from typing import List, Tuple, Optional, Dict
-from game import ANIMALS, GRID_SIZE, check_sequence, check_condition, choose_spot_ai, ai_bid
+from game import (
+    ANIMALS,
+    GRID_SIZE,
+    check_sequence,
+    check_condition,
+    choose_spot_ai,
+    ai_bid,
+)
 
 Board = List[List[Optional[str]]]
 
@@ -115,17 +122,14 @@ def get_bid_input(screen: pygame.Surface, board: Board, tile: str, player: int,
             if event.type == pygame.KEYDOWN:
                 if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
                     if text == "":
-                        print("Enter a number.")
                         continue
                     try:
                         bid_val = int(text)
                     except ValueError:
-                        print("Enter a number.")
                         text = ""
                         continue
                     if 0 <= bid_val <= chips[player]:
                         return bid_val
-                    print("Invalid bid.")
                     text = ""
                 elif event.key == pygame.K_BACKSPACE:
                     text = text[:-1]
@@ -190,13 +194,41 @@ def select_ai_mode(screen: pygame.Surface,
         pygame.time.wait(10)
 
 
+def show_game_over(screen: pygame.Surface, board: Board, message: str,
+                   font_large: pygame.font.Font,
+                   font_small: pygame.font.Font, board_width: int,
+                   middle_rect: pygame.Rect) -> None:
+    """Display the end screen and wait for the player to go back to the menu."""
+    button_rect = pygame.Rect(screen.get_width() // 2 - 80,
+                              screen.get_height() - 80, 160, 50)
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                raise SystemExit
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if button_rect.collidepoint(event.pos):
+                    return
+        screen.fill((200, 200, 200))
+        draw_next_tile(screen, "", font_large, board_width)
+        draw_board(screen, board, font_large)
+        draw_middle_text(screen, message, font_small, middle_rect)
+        pygame.draw.rect(screen, (180, 180, 180), button_rect)
+        pygame.draw.rect(screen, (0, 0, 0), button_rect, 2)
+        text = font_small.render("Main Menu", True, (0, 0, 0))
+        screen.blit(text, text.get_rect(center=button_rect.center))
+        pygame.display.flip()
+        pygame.time.wait(10)
+
+
 def run_game_visual(ai: Optional[bool] = None) -> None:
     pygame.init()
     board_width = GRID_SIZE * TILE_SIZE
     info_width = 300
     screen_height = AUCTION_HEIGHT + GRID_SIZE * TILE_SIZE + 2 * MARGIN
-    screen = pygame.display.set_mode((board_width + info_width + 3 * MARGIN,
-                                      screen_height))
+    screen = pygame.display.set_mode(
+        (board_width + info_width + 3 * MARGIN, screen_height)
+    )
     pygame.display.set_caption("Zoo Mahjong")
     font_large = pygame.font.SysFont(None, 48)
     font_small = pygame.font.SysFont(None, 24)
@@ -207,102 +239,113 @@ def run_game_visual(ai: Optional[bool] = None) -> None:
         path = os.path.join("images", f"{animal.lower()}.png")
         try:
             img = pygame.image.load(path).convert_alpha()
-            img = pygame.transform.smoothscale(img, (TILE_SIZE - 10, TILE_SIZE - 10))
+            img = pygame.transform.smoothscale(
+                img, (TILE_SIZE - 10, TILE_SIZE - 10)
+            )
             ANIMAL_IMAGES[animal] = img
         except pygame.error:
-            print(f"Could not load image for {animal} from {path}")
+            pass
 
     top_rect = pygame.Rect(board_width + 2 * MARGIN, MARGIN, info_width, 150)
-    bottom_rect = pygame.Rect(board_width + 2 * MARGIN,
-                              screen_height - 150 - MARGIN,
-                              info_width, 150)
+    bottom_rect = pygame.Rect(
+        board_width + 2 * MARGIN, screen_height - 150 - MARGIN, info_width, 150
+    )
     middle_height = bottom_rect.top - top_rect.bottom - MARGIN
-    middle_rect = pygame.Rect(board_width + 2 * MARGIN,
-                              top_rect.bottom + MARGIN,
-                              info_width, middle_height)
+    middle_rect = pygame.Rect(
+        board_width + 2 * MARGIN, top_rect.bottom + MARGIN, info_width, middle_height
+    )
 
-    if ai is None:
-        ai = select_ai_mode(screen, font_large)
-        screen.fill((200, 200, 200))
-        pygame.display.flip()
-
-    board: Board = [[None] * GRID_SIZE for _ in range(GRID_SIZE)]
-    chips = {1: 10, 2: 10}
-    seq = {1: random.sample(ANIMALS, 3), 2: random.sample(ANIMALS, 3)}
-    cond = {}
-    for player in (1, 2):
-        more, less = random.sample(ANIMALS, 2)
-        cond[player] = (more, less)
-        print(f"\nPlayer {player} secret sequence: {seq[player]}")
-        print(f"Player {player} condition: more {more} than {less}\n")
-
-    current_round = 1
-    last_winner = ""
-    tile = None
-    while any(None in row for row in board):
-        tile = random.choice(ANIMALS)
-        print(f"--- Round {current_round} ---")
-        print(f"Tile up for auction: {tile}")
-
-        bids = {}
-        for player in (1, 2):
-            if ai and player == 2:
-                bid = ai_bid(chips[player])
-                print(f"Computer bids {bid} (chips left {chips[player]})")
-            else:
-                bid = get_bid_input(screen, board, tile, player, chips, seq, cond,
-                                    font_large, font_small, board_width,
-                                    (top_rect, middle_rect, bottom_rect),
-                                    last_winner)
-            bids[player] = bid
-
-        if bids[1] == bids[2]:
-            winner = random.choice([1, 2])
-            print(f"Tie! Player {winner} wins the auction by coin flip.")
-        else:
-            winner = 1 if bids[1] > bids[2] else 2
-        chips[winner] -= bids[winner]
-        last_winner = f"Player {winner} won the bid"
-        print(f"Player {winner} wins and places the tile.")
-        screen.fill((200, 200, 200))
-        draw_next_tile(screen, tile, font_large, board_width)
-        draw_board(screen, board, font_large)
-        draw_middle_text(screen, last_winner, font_small, middle_rect)
-        if not (ai and winner == 2):
-            panel_rect = top_rect if winner == 1 else bottom_rect
-            draw_player_panel(screen, winner, chips, seq, cond,
-                              font_small, panel_rect)
-        pygame.display.flip()
-        if ai and winner == 2:
-            r, c = choose_spot_ai(board)
-            print(f"Computer chooses spot {r},{c}")
-        else:
-            print("Click an empty spot to place the tile.")
-            r, c = choose_spot_visual(board, board_width)
-        board[r][c] = tile
-
-        if check_sequence(board, seq[winner]) or check_condition(board, *cond[winner]):
+    while True:
+        if ai is None:
+            ai_mode = select_ai_mode(screen, font_large)
             screen.fill((200, 200, 200))
-            draw_next_tile(screen, "", font_large, board_width)
-            draw_board(screen, board, font_large)
-            draw_middle_text(screen, f"Player {winner} wins!", font_small,
-                             middle_rect)
             pygame.display.flip()
-            print(f"Player {winner} wins!")
-            pygame.time.wait(2000)
-            pygame.quit()
-            return
+        else:
+            ai_mode = ai
+            ai = None
 
-        current_round += 1
+        board: Board = [[None] * GRID_SIZE for _ in range(GRID_SIZE)]
+        chips = {1: 10, 2: 10}
+        seq = {1: random.sample(ANIMALS, 3), 2: random.sample(ANIMALS, 3)}
+        cond = {}
+        for player in (1, 2):
+            more, less = random.sample(ANIMALS, 2)
+            cond[player] = (more, less)
 
-    screen.fill((200, 200, 200))
-    draw_next_tile(screen, "", font_large, board_width)
-    draw_board(screen, board, font_large)
-    draw_middle_text(screen, "It's a draw!", font_small, middle_rect)
-    pygame.display.flip()
-    print("The board is full. It's a draw!")
-    pygame.time.wait(2000)
-    pygame.quit()
+        current_round = 1
+        last_winner = ""
+        tile = None
+        while any(None in row for row in board):
+            tile = random.choice(ANIMALS)
+
+            bids = {}
+            for player in (1, 2):
+                if ai_mode and player == 2:
+                    bid = ai_bid(chips[player])
+                else:
+                    bid = get_bid_input(
+                        screen,
+                        board,
+                        tile,
+                        player,
+                        chips,
+                        seq,
+                        cond,
+                        font_large,
+                        font_small,
+                        board_width,
+                        (top_rect, middle_rect, bottom_rect),
+                        last_winner,
+                    )
+                bids[player] = bid
+
+            if bids[1] == bids[2]:
+                winner = random.choice([1, 2])
+            else:
+                winner = 1 if bids[1] > bids[2] else 2
+            chips[winner] -= bids[winner]
+            last_winner = f"Player {winner} won the bid"
+            screen.fill((200, 200, 200))
+            draw_next_tile(screen, tile, font_large, board_width)
+            draw_board(screen, board, font_large)
+            draw_middle_text(screen, last_winner, font_small, middle_rect)
+            if not (ai_mode and winner == 2):
+                panel_rect = top_rect if winner == 1 else bottom_rect
+                draw_player_panel(
+                    screen, winner, chips, seq, cond, font_small, panel_rect
+                )
+            pygame.display.flip()
+            if ai_mode and winner == 2:
+                r, c = choose_spot_ai(board)
+            else:
+                r, c = choose_spot_visual(board, board_width)
+            board[r][c] = tile
+
+            if check_sequence(board, seq[winner]) or check_condition(
+                board, *cond[winner]
+            ):
+                show_game_over(
+                    screen,
+                    board,
+                    f"Player {winner} wins!",
+                    font_large,
+                    font_small,
+                    board_width,
+                    middle_rect,
+                )
+                break
+
+            current_round += 1
+        else:
+            show_game_over(
+                screen,
+                board,
+                "It's a draw!",
+                font_large,
+                font_small,
+                board_width,
+                middle_rect,
+            )
 
 
 if __name__ == "__main__":
