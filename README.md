@@ -41,6 +41,18 @@ The visual mode also supports the `ai` argument to enable a computer opponent:
 python3 visual_game.py ai
 ```
 
+### Building a Windows Executable
+
+If you want a standalone executable of the graphical version, install
+`PyInstaller` and run it on a Windows machine:
+
+```bash
+pip install pyinstaller
+pyinstaller --onefile visual_game.py
+```
+
+The resulting `visual_game.exe` will be located in the `dist` folder.
+
 During each round a random animal tile is auctioned. Players bid chips and the
 winner places the tile on the grid. A player wins by either forming their secret
 sequence of three animals or fulfilling their condition card stating that one
