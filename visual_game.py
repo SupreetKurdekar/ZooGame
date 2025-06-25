@@ -1,8 +1,7 @@
 import pygame
 import random
 from typing import List, Tuple, Optional
-from game import (ANIMALS, ANIMAL_ICONS, GRID_SIZE, check_sequence,
-                  check_condition, choose_spot_ai, ai_bid)
+from game import ANIMALS, GRID_SIZE, check_sequence, check_condition, choose_spot_ai, ai_bid
 
 Board = List[List[Optional[str]]]
 
@@ -21,7 +20,7 @@ def draw_board(screen: pygame.Surface, board: Board, font: pygame.font.Font) -> 
             pygame.draw.rect(screen, (245, 245, 220), rect)  # light tile
             pygame.draw.rect(screen, (0, 0, 0), rect, 2)
             if tile:
-                text = font.render(ANIMAL_ICONS[tile], True, (0, 0, 0))
+                text = font.render(tile[0], True, (0, 0, 0))
                 text_rect = text.get_rect(center=rect.center)
                 screen.blit(text, text_rect)
 
@@ -33,7 +32,7 @@ def draw_next_tile(screen: pygame.Surface, tile: str, font: pygame.font.Font,
     pygame.draw.rect(screen, (220, 220, 220), area)
     pygame.draw.rect(screen, (0, 0, 0), area, 2)
     if tile:
-        text = font.render(ANIMAL_ICONS[tile], True, (0, 0, 0))
+        text = font.render(tile, True, (0, 0, 0))
         text_rect = text.get_rect(center=area.center)
         screen.blit(text, text_rect)
 
@@ -65,13 +64,11 @@ def draw_player_panel(screen: pygame.Surface, player: int, chips, seq, cond,
     padding = 5
     y = rect.y + padding
 
-    seq_icons = ''.join(ANIMAL_ICONS[a] for a in seq[player])
-    cond_icons = f"{ANIMAL_ICONS[cond[player][0]]}>{ANIMAL_ICONS[cond[player][1]]}"
     lines = [
         f"Player {player}",
         f"Chips: {chips[player]}",
-        f"Seq: {seq_icons}",
-        f"Cond: {cond_icons}",
+        f"Seq: {'-'.join(seq[player])}",
+        f"Cond: more {cond[player][0]} than {cond[player][1]}",
         "",
     ]
     for line in lines:
@@ -211,11 +208,8 @@ def run_game_visual(ai: Optional[bool] = None) -> None:
     for player in (1, 2):
         more, less = random.sample(ANIMALS, 2)
         cond[player] = (more, less)
-        seq_icons = ' '.join(ANIMAL_ICONS[a] for a in seq[player])
-        print(f"\nPlayer {player} secret sequence: {seq_icons}")
-        print(
-            f"Player {player} condition: more {ANIMAL_ICONS[more]} than {ANIMAL_ICONS[less]}\n"
-        )
+        print(f"\nPlayer {player} secret sequence: {seq[player]}")
+        print(f"Player {player} condition: more {more} than {less}\n")
 
     current_round = 1
     last_winner = ""
@@ -223,7 +217,7 @@ def run_game_visual(ai: Optional[bool] = None) -> None:
     while any(None in row for row in board):
         tile = random.choice(ANIMALS)
         print(f"--- Round {current_round} ---")
-        print(f"Tile up for auction: {ANIMAL_ICONS[tile]}")
+        print(f"Tile up for auction: {tile}")
 
         bids = {}
         for player in (1, 2):
