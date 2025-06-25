@@ -103,7 +103,10 @@ def draw_player_panel(screen: pygame.Surface, player: int, chips, seq, cond,
                            rect.width - 2 * padding, box_h)
     pygame.draw.rect(screen, (255, 255, 255), box_rect)
     pygame.draw.rect(screen, (0, 0, 0), box_rect, 2)
-    bid_surf = font.render(text, True, (0, 0, 0))
+    if text:
+        bid_surf = font.render(text, True, (0, 0, 0))
+    else:
+        bid_surf = font.render("Enter bid here", True, (150, 150, 150))
     screen.blit(bid_surf, (box_rect.x + 5, box_rect.y + 5))
 
 
