@@ -20,7 +20,7 @@ winning conditions.
 Run the game with:
 
 ```bash
-python3 game.py
+python game.py
 ```
 
 You'll be prompted to choose between a 1-player game (against the computer) or a
@@ -28,13 +28,13 @@ You'll be prompted to choose between a 1-player game (against the computer) or a
 prompt and immediately start in single-player mode:
 
 ```bash
-python3 game.py ai
+python game.py ai
 ```
 
 Alternatively you can launch a basic graphical version using pygame:
 
 ```bash
-python3 visual_game.py
+python visual_game.py
 ```
 
 When starting the graphical mode you'll first see a small menu where you can
@@ -42,7 +42,7 @@ choose between a 1-player game or a 2-player game. The `ai` argument can still
 be used to bypass the menu and immediately start in single-player mode:
 
 ```bash
-python3 visual_game.py ai
+python visual_game.py ai
 ```
 
 ### Building a Windows Executable
