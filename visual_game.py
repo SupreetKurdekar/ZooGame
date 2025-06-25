@@ -166,8 +166,18 @@ def select_ai_mode(screen: pygame.Surface,
                    font: pygame.font.Font) -> bool:
     """Return True for a 1-player game, False for 2 players."""
     w, h = screen.get_size()
-    one_rect = pygame.Rect(w // 2 - 160, h // 2 - 40, 140, 60)
-    two_rect = pygame.Rect(w // 2 + 20, h // 2 - 40, 140, 60)
+    # Buttons sit near the bottom so we have space for the title and rules
+    one_rect = pygame.Rect(w // 2 - 190, h - 120, 180, 60)
+    two_rect = pygame.Rect(w // 2 + 10, h - 120, 180, 60)
+
+    title_font = pygame.font.SysFont("arial", 72)
+    info_font = pygame.font.SysFont(None, 28)
+    rules = [
+        "Each round a random animal tile is auctioned.",
+        "Players bid chips and the winner places the tile.",
+        "Win by completing your secret sequence",
+        "or by meeting your animal condition.",
+    ]
 
     while True:
         for event in pygame.event.get():
@@ -181,13 +191,30 @@ def select_ai_mode(screen: pygame.Surface,
                     return False
 
         screen.fill((220, 220, 220))
+        # Title
+        title_surf = title_font.render("Zoo Mahjong", True, (0, 0, 0))
+        screen.blit(title_surf, title_surf.get_rect(center=(w // 2, 70)))
+
+        # Explanation and rules
+        start_y = 140
+        explain = info_font.render(
+            "Bid on animals and fill the grid to win!", True, (0, 0, 0)
+        )
+        screen.blit(explain, explain.get_rect(center=(w // 2, start_y)))
+        start_y += info_font.get_linesize() + 10
+        for line in rules:
+            line_surf = info_font.render(line, True, (0, 0, 0))
+            screen.blit(line_surf, line_surf.get_rect(center=(w // 2, start_y)))
+            start_y += info_font.get_linesize() + 5
+
+        # Buttons
         pygame.draw.rect(screen, (180, 180, 180), one_rect)
         pygame.draw.rect(screen, (180, 180, 180), two_rect)
         pygame.draw.rect(screen, (0, 0, 0), one_rect, 2)
         pygame.draw.rect(screen, (0, 0, 0), two_rect, 2)
 
-        text1 = font.render("1 Player", True, (0, 0, 0))
-        text2 = font.render("2 Players", True, (0, 0, 0))
+        text1 = info_font.render("1 Player", True, (0, 0, 0))
+        text2 = info_font.render("2 Players", True, (0, 0, 0))
         screen.blit(text1, text1.get_rect(center=one_rect.center))
         screen.blit(text2, text2.get_rect(center=two_rect.center))
         pygame.display.flip()
